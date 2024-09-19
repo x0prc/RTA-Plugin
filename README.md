@@ -21,7 +21,7 @@ While Wireshark provides detailed packet analysis, it does not have built-in ale
 `cmake`, `glib`, `libpcap`
 
 # Setup
-Distribute it as a `.lua` or `.so/.dll` file to be loaded into Wireshark.
+- Change values in the `smtp_config` function with your SMTP server, Port, Email Address and Password, Sender and Recipient Email
 
 # Usage
 - On Linux: `~/.local/lib/wireshark/plugins/`
