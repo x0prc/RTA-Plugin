@@ -21,6 +21,8 @@ While Wireshark provides detailed packet analysis, it does not have built-in ale
 Distribute it as a `.lua` or `.so/.dll` file to be loaded into Wireshark.
 
 # Usage
+- On Linux: `~/.local/lib/wireshark/plugins/`
+- On Windows: `C:\Program Files\Wireshark\plugins\2.x\`
 
 # Testing
 - Simulate attacks or anomalies like DDoS, port scans, or malformed packets.
