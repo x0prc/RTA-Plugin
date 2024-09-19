@@ -11,6 +11,9 @@ While Wireshark provides detailed packet analysis, it does not have built-in ale
   - Malformed Packets Detection
   - High Error Rates Detection
   - Known Malicious Signatures Detection
+- **Functionalities:**
+  - Notifications via Email
+  - Writes to a Log file externally
 
 # Pre-Requisites
 [Wireshark](https://wireshark.org) <br>
