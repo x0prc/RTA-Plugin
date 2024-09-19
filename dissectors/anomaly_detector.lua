@@ -1,3 +1,5 @@
+local smtp = require("socket.smtp")
+
 local anomaly_detector_proto = Proto("RTA", "Anomaly Detector Protocol")
 
 local fields = anomaly_detector_proto.fields
@@ -5,6 +7,15 @@ fields.src_ip = ProtoField.ipv4("anomaly_detector.src_ip", "Source IP")
 fields.dst_ip = ProtoField.ipv4("anomaly_detector.dst_ip", "Destination IP")
 fields.src_port = ProtoField.uint16("anomaly_detector.src_port", "Source Port")
 fields.dst_port = ProtoField.uint16("anomaly_detector.dst_port", "Destination Port")
+
+local smtp_config = {
+    server = "smtp.example.com",    -- Replace with your SMTP server
+    port = 587,                     -- SMTP port (587 for TLS, 465 for SSL)
+    user = "your-email@example.com", -- Your email address
+    password = "your-password",      -- Your email password
+    from = "<your-email@example.com>", -- Sender email
+    to = "<recipient-email@example.com>", -- Recipient email
+}
 
 local traffic_threshold = 100  
 local error_threshold = 10     
@@ -19,6 +30,34 @@ local common_ports = {
     [22] = true,    -- SSH
     [53] = true     -- DNS
 }
+
+function send_email_alert(subject, message)
+    local msg = {
+        headers = {
+            to = smtp_config.to,
+            subject = subject
+        },
+        body = message
+    }
+    
+    local r, e = smtp.send {
+        from = smtp_config.from,
+        rcpt = smtp_config.to,
+        source = smtp.message(msg),
+        user = smtp_config.user,
+        password = smtp_config.password,
+        server = smtp_config.server,
+        port = smtp_config.port,
+        authentication = "login",  -- Authentication method (login for most SMTP servers)
+        ssl = false                 -- Set to true for SSL, false for TLS
+    }
+
+    if not r then
+        print("Failed to send email: " .. e)
+    else
+        print("Alert email sent successfully!")
+    end
+end
 
 function detect_anomalies(pkt)
     local src_ip = tostring(ip_src_field())
