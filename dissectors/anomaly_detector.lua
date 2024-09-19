@@ -48,7 +48,7 @@ function send_email_alert(subject, message)
         password = smtp_config.password,
         server = smtp_config.server,
         port = smtp_config.port,
-        authentication = "login",  -- Authentication method (login for most SMTP servers)
+        authentication = "login",  
         ssl = false                 -- Set to true for SSL, false for TLS
     }
 
@@ -56,6 +56,16 @@ function send_email_alert(subject, message)
         print("Failed to send email: " .. e)
     else
         print("Alert email sent successfully!")
+    end
+end
+
+function log_threat(threat_message)
+    local log_file = io.open("RTA_log.txt", "a")  -- Open the log file in append mode
+    if log_file then
+        log_file:write(threat_message .. "\n")
+        log_file:close()
+    else
+        print("Failed to open log file.")
     end
 end
 
