@@ -21,7 +21,10 @@ While Wireshark provides detailed packet analysis, it does not have built-in ale
 `cmake`, `glib`, `libpcap`
 
 # Setup
-- Change values in the `smtp_config` function with your SMTP server, Port, Email Address and Password, Sender and Recipient Email
+- Install `luarocks` and `luasocket`
+- Add the lua file in Wireshark Plugins directory.
+- Change values in the `smtp_config` function with your SMTP server, Port, Email Address and Password, Sender and Recipient Email.
+- Launch Wireshark. The plugins configured should work and display Alert messages.
 
 # Usage
 - On Linux: `~/.local/lib/wireshark/plugins/`
@@ -30,8 +33,6 @@ While Wireshark provides detailed packet analysis, it does not have built-in ale
 # Testing
 - Simulate attacks or anomalies like DDoS, port scans, or malformed packets.
 - Adjust alert thresholds and detection rules as necessary to minimize false positives.
-
-# Examples
 
 # Future
 - **Machine Learning Integration**: Incorporate ML models to predict anomalies based on traffic history.
