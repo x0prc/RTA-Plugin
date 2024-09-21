@@ -17,6 +17,7 @@ local smtp_config = {
     to = "<recipient-email@example.com>", -- Recipient email
 }
 
+-- Traffic tracking variables
 local traffic_threshold = 100  
 local error_threshold = 10     
 local traffic_patterns = {}    
@@ -49,7 +50,7 @@ function send_email_alert(subject, message)
         server = smtp_config.server,
         port = smtp_config.port,
         authentication = "login",  
-        ssl = false                 -- Set to true for SSL, false for TLS
+        ssl = false                 
     }
 
     if not r then
@@ -59,8 +60,9 @@ function send_email_alert(subject, message)
     end
 end
 
+-- Function to log threats to a file
 function log_threat(threat_message)
-    local log_file = io.open("RTA_log.txt", "a")  -- Open the log file in append mode
+    local log_file = io.open("RTA_log.txt", "a")
     if log_file then
         log_file:write(threat_message .. "\n")
         log_file:close()
@@ -69,94 +71,80 @@ function log_threat(threat_message)
     end
 end
 
-function detect_anomalies(pkt)
-    local src_ip = tostring(ip_src_field())
-    local dst_ip = tostring(ip_dst_field())
-    local src_port = tonumber(port_src_field())
-    local dst_port = tonumber(port_dst_field())
-    local packet_len = tonumber(packet_len_field())
-    
-    -- Port Access
-    if dst_port == 22 or dst_port == 3389 then  -- Unusual access to SSH or RDP
-        return "Suspicious Access: Unusual port access detected!"
+function update_traffic_patterns(src_ip, dst_ip, port)
+    if traffic_patterns[src_ip] == nil then
+        traffic_patterns[src_ip] = { total_packets = 0, errors = 0, destinations = {} }
     end
-    
-    -- DDoS 
-    if not traffic_patterns[src_ip] then
-        traffic_patterns[src_ip] = {count = 1}
-    else
-        traffic_patterns[src_ip].count = traffic_patterns[src_ip].count + 1
+    traffic_patterns[src_ip].total_packets = traffic_patterns[src_ip].total_packets + 1
+    if traffic_patterns[src_ip].destinations[dst_ip] == nil then
+        traffic_patterns[src_ip].destinations[dst_ip] = { total_packets = 0, ports = {} }
     end
-
-    if traffic_patterns[src_ip].count > 1000 then  
-        return "DDoS Alert: High traffic volume detected!"
+    traffic_patterns[src_ip].destinations[dst_ip].total_packets = traffic_patterns[src_ip].destinations[dst_ip].total_packets + 1
+    if traffic_patterns[src_ip].destinations[dst_ip].ports[port] == nil then
+        traffic_patterns[src_ip].destinations[dst_ip].ports[port] = { count = 0 }
     end
-    
+    traffic_patterns[src_ip].destinations[dst_ip].ports[port].count = traffic_patterns[src_ip].destinations[dst_ip].ports[port].count + 1
 end
 
-local traffic_threshold = 100  
-
--- Function to detect traffic spikes
 function detect_traffic_spikes(traffic_patterns)
     for src_ip, data in pairs(traffic_patterns) do
         if data.total_packets > traffic_threshold then
-            print("ALERT: Traffic spike detected from source IP " .. src_ip)
+            local message = "ALERT: Traffic spike detected from source IP " .. src_ip
+            print(message)
+            send_email_alert("Traffic Spike Detected", message)
+            log_threat(message)
         end
     end
 end
 
-local common_ports = {
-    [80] = true,   -- HTTP
-    [443] = true,  -- HTTPS
-    [22] = true,   -- SSH
-    [53] = true    -- DNS
-}
-
--- Function to detect uncommon ports
 function detect_uncommon_ports(traffic_patterns)
     for src_ip, data in pairs(traffic_patterns) do
         for dst_ip, dst_data in pairs(data.destinations) do
             for port, port_data in pairs(dst_data.ports) do
                 if not common_ports[port] then
-                    print("ALERT: Uncommon port detected! Src IP: " .. src_ip .. " Dst IP: " .. dst_ip .. " Port: " .. port)
+                    local message = "ALERT: Uncommon port detected! Src IP: " .. src_ip .. " Dst IP: " .. dst_ip .. " Port: " .. port
+                    print(message)
+                    send_email_alert("Uncommon Port Detected", message)
+                    log_threat(message)
                 end
             end
         end
     end
 end
 
--- Function to detect malformed packets using pinfo structure
 function detect_malformed_packets(pinfo)
     if pinfo.err ~= nil then
-        print("ALERT: Malformed packet detected! Frame: " .. pinfo.number .. " Reason: " .. pinfo.err)
+        local message = "ALERT: Malformed packet detected! Frame: " .. pinfo.number .. " Reason: " .. pinfo.err
+        print(message)
+        send_email_alert("Malformed Packet Detected", message)
+        log_threat(message)
     end
 end
 
-local error_threshold = 10  -- Define a threshold for triggering an alert for high errors
-
--- Function to detect high error rates
 function detect_high_error_rates(traffic_patterns)
     for src_ip, data in pairs(traffic_patterns) do
         if data.errors and data.errors > error_threshold then
-            print("ALERT: High error rate detected from source IP " .. src_ip .. " with " .. data.errors .. " errors.")
+            local message = "ALERT: High error rate detected from source IP " .. src_ip .. " with " .. data.errors .. " errors."
+            print(message)
+            send_email_alert("High Error Rate Detected", message)
+            log_threat(message)
         end
     end
 end
-
-local known_malicious_ips = {
-    ["192.168.1.100"] = true,
-    ["10.10.10.10"] = true
-}
 
 -- Function to detect known malicious signatures
 function detect_known_malicious_signatures(traffic_patterns)
     for src_ip, data in pairs(traffic_patterns) do
         if known_malicious_ips[src_ip] then
-            print("ALERT: Known malicious IP detected! Src IP: " .. src_ip)
+            local message = "ALERT: Known malicious IP detected! Src IP: " .. src_ip
+            print(message)
+            send_email_alert("Malicious IP Detected", message)
+            log_threat(message)
         end
     end
 end
 
+-- Dissector function
 function anomaly_detector_proto.dissector(buffer, pinfo, tree)
     if pinfo.ip == nil then return end
 
@@ -171,18 +159,19 @@ function anomaly_detector_proto.dissector(buffer, pinfo, tree)
     subtree:add(fields.src_port, src_port)
     subtree:add(fields.dst_port, dst_port)
 
-    -- Update traffic patterns
+    
     update_traffic_patterns(src_ip, dst_ip, dst_port)
 
-    -- Call anomaly detection functions
+    
     detect_traffic_spikes(traffic_patterns)
     detect_uncommon_ports(traffic_patterns)
-    detect_malformed_packets(pinfo)  
+    detect_malformed_packets(pinfo)
     detect_high_error_rates(traffic_patterns)
     detect_known_malicious_signatures(traffic_patterns)
 
     pinfo.cols.protocol = "RTA"
 end
 
+-- Register the dissector for IP protocol
 local ip_table = DissectorTable.get("ip.proto")
-ip_table:add(0, anomaly_detector_proto)
+ip_table:add(0, anomaly_detector_proto)  -- 0 will apply the dissector to all IP traffic
