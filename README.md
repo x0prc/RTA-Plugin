@@ -4,6 +4,9 @@ A plugin for Wireshark that provides Real-Time Alerting mechanism for suspicious
 # Motivation
 While Wireshark provides detailed packet analysis, it does not have built-in alerting mechanisms for suspicious activities or anomalies in traffic patterns. This means users must manually monitor and analyze captured data without automated notifications. This repository automates the said process.
 
+# Documentation
+[Pages](https://x0prc.github.io/notes/Notes/Published-Documentation/RTA-Plugin)
+
 # How Does it Work?
 - **Key Features:**
   - Traffic Spikes Detection
